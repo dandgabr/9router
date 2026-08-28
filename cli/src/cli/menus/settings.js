@@ -36,11 +36,15 @@ async function showSettingsMenu(breadcrumb = []) {
         lines.push(`  Tunnel:   ${COLORS.red}OFF${COLORS.reset} ${COLORS.dim}(local only)${COLORS.reset}`);
       }
 
-      // RTK section
+      // RTK & Memory section
       const rtkOn = data?.settings?.rtkEnabled !== false;
       lines.push(`  RTK:      ${rtkOn ? `${COLORS.green}ON${COLORS.reset}` : `${COLORS.red}OFF${COLORS.reset}`} ${COLORS.dim}(Token Saver)${COLORS.reset}`);
       const headroomOn = data?.settings?.headroomEnabled === true;
       lines.push(`  Headroom: ${headroomOn ? `${COLORS.green}ON${COLORS.reset}` : `${COLORS.red}OFF${COLORS.reset}`} ${COLORS.dim}(${data?.settings?.headroomUrl || "http://localhost:8787"})${COLORS.reset}`);
+
+      const memToolOn = data?.settings?.memoryToolPruningEnabled !== false;
+      const memCompactOn = data?.settings?.memoryCompactionEnabled === true;
+      lines.push(`  Memory:   Tool Prune: ${memToolOn ? `${COLORS.green}ON${COLORS.reset}` : `${COLORS.red}OFF${COLORS.reset}`} · Compaction: ${memCompactOn ? `${COLORS.green}ON${COLORS.reset}` : `${COLORS.red}OFF${COLORS.reset}`}`);
 
       // Auth mode section
       const authMode = data?.settings?.authMode || "password";
@@ -81,6 +85,27 @@ async function showSettingsMenu(breadcrumb = []) {
           return `Token Saver (Headroom): ${on ? "ON" : "OFF"} → toggle`;
         },
         action: async (d) => { await toggleHeadroom(d?.settings?.headroomEnabled === true); return true; }
+      },
+      {
+        label: (d) => {
+          const on = d?.settings?.memoryToolPruningEnabled !== false;
+          return `🧠 Memory (Tool Pruning): ${on ? "ON" : "OFF"} → toggle`;
+        },
+        action: async (d) => { await toggleMemorySetting("memoryToolPruningEnabled", d?.settings?.memoryToolPruningEnabled !== false, "Tool Pruning"); return true; }
+      },
+      {
+        label: (d) => {
+          const on = d?.settings?.memoryCompactionEnabled === true;
+          return `🧠 Memory (Sliding Compaction): ${on ? "ON" : "OFF"} → toggle`;
+        },
+        action: async (d) => { await toggleMemorySetting("memoryCompactionEnabled", d?.settings?.memoryCompactionEnabled === true, "Sliding Compaction"); return true; }
+      },
+      {
+        label: (d) => {
+          const on = d?.settings?.memoryCacheAnchorEnabled !== false;
+          return `🧠 Memory (Cache Breakpoint Anchor): ${on ? "ON" : "OFF"} → toggle`;
+        },
+        action: async (d) => { await toggleMemorySetting("memoryCacheAnchorEnabled", d?.settings?.memoryCacheAnchorEnabled !== false, "Cache Breakpoint Anchor"); return true; }
       },
       {
         label: "🔑 Reset Password to Default",
@@ -174,6 +199,23 @@ async function toggleHeadroom(currentlyOn) {
   const result = await api.updateSettings({ headroomEnabled: next });
   if (result.success) {
     showStatus(`Headroom ${next ? "enabled" : "disabled"}`, "success");
+  } else {
+    showStatus(`Failed: ${result.error}`, "error");
+  }
+  await pause();
+}
+
+/**
+ * Toggle a Memory Enhancement setting via API
+ * @param {string} settingKey
+ * @param {boolean} currentlyOn
+ * @param {string} displayName
+ */
+async function toggleMemorySetting(settingKey, currentlyOn, displayName) {
+  const next = !currentlyOn;
+  const result = await api.updateSettings({ [settingKey]: next });
+  if (result.success) {
+    showStatus(`Memory ${displayName} ${next ? "enabled" : "disabled"}`, "success");
   } else {
     showStatus(`Failed: ${result.error}`, "error");
   }

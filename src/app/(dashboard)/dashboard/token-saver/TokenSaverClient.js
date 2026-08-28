@@ -59,6 +59,17 @@ export default function TokenSaverClient() {
   const [pxpipeActionError, setPxpipeActionError] = useState("");
   const [locale, setLocale] = useState("en");
 
+  // AI Memory & Context Optimizer state
+  const [memoryToolPruningEnabled, setMemoryToolPruningEnabled] = useState(true);
+  const [memoryMaxToolTurnsKeepFull, setMemoryMaxToolTurnsKeepFull] = useState(2);
+  const [memoryMaxHistoricalToolChars, setMemoryMaxHistoricalToolChars] = useState(800);
+  const [memoryMediaPruningEnabled, setMemoryMediaPruningEnabled] = useState(true);
+  const [memoryCompactionEnabled, setMemoryCompactionEnabled] = useState(false);
+  const [memoryCompactionThresholdTokens, setMemoryCompactionThresholdTokens] = useState(32000);
+  const [memoryRecentTurnsToKeep, setMemoryRecentTurnsToKeep] = useState(8);
+  const [memoryCacheAnchorEnabled, setMemoryCacheAnchorEnabled] = useState(true);
+  const [memoryHandoffEnabled, setMemoryHandoffEnabled] = useState(false);
+
   const { copied, copy } = useCopyToClipboard();
 
   useEffect(() => {
@@ -102,6 +113,31 @@ export default function TokenSaverClient() {
     } catch (error) {
       console.log("Error updating rtkEnabled:", error);
     }
+  };
+
+  const handleMemoryToolPruning = (value) => {
+    setMemoryToolPruningEnabled(value);
+    patchSetting({ memoryToolPruningEnabled: value });
+  };
+
+  const handleMemoryMediaPruning = (value) => {
+    setMemoryMediaPruningEnabled(value);
+    patchSetting({ memoryMediaPruningEnabled: value });
+  };
+
+  const handleMemoryCompaction = (value) => {
+    setMemoryCompactionEnabled(value);
+    patchSetting({ memoryCompactionEnabled: value });
+  };
+
+  const handleMemoryCacheAnchor = (value) => {
+    setMemoryCacheAnchorEnabled(value);
+    patchSetting({ memoryCacheAnchorEnabled: value });
+  };
+
+  const handleMemoryHandoff = (value) => {
+    setMemoryHandoffEnabled(value);
+    patchSetting({ memoryHandoffEnabled: value });
   };
 
   const handleCavemanEnabled = (value) => {
@@ -423,6 +459,15 @@ export default function TokenSaverClient() {
           setPonytailLevel(data.ponytailLevel || "full");
           setPxpipeEnabled(!!data.pxpipeEnabled);
           if (typeof data.pxpipeMinChars === "number") setPxpipeMinChars(data.pxpipeMinChars);
+          setMemoryToolPruningEnabled(data.memoryToolPruningEnabled !== false);
+          if (typeof data.memoryMaxToolTurnsKeepFull === "number") setMemoryMaxToolTurnsKeepFull(data.memoryMaxToolTurnsKeepFull);
+          if (typeof data.memoryMaxHistoricalToolChars === "number") setMemoryMaxHistoricalToolChars(data.memoryMaxHistoricalToolChars);
+          setMemoryMediaPruningEnabled(data.memoryMediaPruningEnabled !== false);
+          setMemoryCompactionEnabled(!!data.memoryCompactionEnabled);
+          if (typeof data.memoryCompactionThresholdTokens === "number") setMemoryCompactionThresholdTokens(data.memoryCompactionThresholdTokens);
+          if (typeof data.memoryRecentTurnsToKeep === "number") setMemoryRecentTurnsToKeep(data.memoryRecentTurnsToKeep);
+          setMemoryCacheAnchorEnabled(data.memoryCacheAnchorEnabled !== false);
+          setMemoryHandoffEnabled(!!data.memoryHandoffEnabled);
           refreshHeadroomStatus();
           // PRD: run the PXPIPE health check automatically when the page opens
           refreshPxpipeStatus().then(runPxpipeHealth);
@@ -466,6 +511,150 @@ export default function TokenSaverClient() {
 
   return (
     <div className="space-y-6 p-6">
+      <Card id="memory">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary">
+              psychology
+            </span>
+            AI Memory & Context Optimizer
+          </h2>
+          <span className="text-xs text-text-muted bg-surface-2 px-2.5 py-1 rounded-full border border-border">
+            ai-memory inspired
+          </span>
+        </div>
+        <p className="text-sm text-text-muted mb-4">
+          Bounded lifecycle memory management and token pruning for multi-turn coding sessions (Claude Code, Cline, Roo, Codex).
+        </p>
+
+        <div className="space-y-4 divide-y divide-border">
+          {/* Phase 1: Tool Output Pruning */}
+          <div className="pt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm">Historical Tool Output Pruning</p>
+              <p className="text-xs text-text-muted">
+                Truncate heavy tool results (file dumps, git diffs, builds) in older turns while keeping recent turns complete.
+              </p>
+              {memoryToolPruningEnabled && (
+                <div className="mt-2 flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-text-muted mr-1.5">Keep recent turns:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={memoryMaxToolTurnsKeepFull}
+                      onChange={(e) => {
+                        const val = Math.max(1, parseInt(e.target.value, 10) || 2);
+                        setMemoryMaxToolTurnsKeepFull(val);
+                        patchSetting({ memoryMaxToolTurnsKeepFull: val });
+                      }}
+                      className="w-14 rounded border border-border bg-surface px-1.5 py-0.5 text-center font-mono"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-text-muted mr-1.5">Max historical chars:</span>
+                    <input
+                      type="number"
+                      min="100"
+                      max="5000"
+                      step="100"
+                      value={memoryMaxHistoricalToolChars}
+                      onChange={(e) => {
+                        const val = Math.max(100, parseInt(e.target.value, 10) || 800);
+                        setMemoryMaxHistoricalToolChars(val);
+                        patchSetting({ memoryMaxHistoricalToolChars: val });
+                      }}
+                      className="w-20 rounded border border-border bg-surface px-1.5 py-0.5 text-center font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <Toggle checked={memoryToolPruningEnabled} onChange={handleMemoryToolPruning} />
+          </div>
+
+          {/* Phase 1: Historical Media Pruning */}
+          <div className="pt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm">Historical Media & Attachment Pruning</p>
+              <p className="text-xs text-text-muted">
+                Replace bulky base64 images/audio from past answered turns with lightweight placeholders, preserving media in the active turn.
+              </p>
+            </div>
+            <Toggle checked={memoryMediaPruningEnabled} onChange={handleMemoryMediaPruning} />
+          </div>
+
+          {/* Phase 2: Sliding Window Compaction */}
+          <div className="pt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm">Sliding Window Context Compaction</p>
+              <p className="text-xs text-text-muted">
+                Consolidate turns 1 to N-K into a structured summary block when total history exceeds token threshold.
+              </p>
+              {memoryCompactionEnabled && (
+                <div className="mt-2 flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-text-muted mr-1.5">Token threshold:</span>
+                    <input
+                      type="number"
+                      min="4000"
+                      max="128000"
+                      step="4000"
+                      value={memoryCompactionThresholdTokens}
+                      onChange={(e) => {
+                        const val = Math.max(4000, parseInt(e.target.value, 10) || 32000);
+                        setMemoryCompactionThresholdTokens(val);
+                        patchSetting({ memoryCompactionThresholdTokens: val });
+                      }}
+                      className="w-24 rounded border border-border bg-surface px-1.5 py-0.5 text-center font-mono"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-text-muted mr-1.5">Recent turns to keep:</span>
+                    <input
+                      type="number"
+                      min="2"
+                      max="30"
+                      value={memoryRecentTurnsToKeep}
+                      onChange={(e) => {
+                        const val = Math.max(2, parseInt(e.target.value, 10) || 8);
+                        setMemoryRecentTurnsToKeep(val);
+                        patchSetting({ memoryRecentTurnsToKeep: val });
+                      }}
+                      className="w-16 rounded border border-border bg-surface px-1.5 py-0.5 text-center font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            <Toggle checked={memoryCompactionEnabled} onChange={handleMemoryCompaction} />
+          </div>
+
+          {/* Phase 3: Prompt Cache Anchoring */}
+          <div className="pt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm">Prompt Cache Breakpoint Anchoring</p>
+              <p className="text-xs text-text-muted">
+                Deterministically anchor cache breakpoints on system and tool prefixes (Anthropic/Gemini/OpenAI) for up to 90% cost savings.
+              </p>
+            </div>
+            <Toggle checked={memoryCacheAnchorEnabled} onChange={handleMemoryCacheAnchor} />
+          </div>
+
+          {/* Phase 4: Cross-Session Handoff */}
+          <div className="pt-3 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm">Cross-Session Handoff Continuity</p>
+              <p className="text-xs text-text-muted">
+                Inject structured handoff packets across CLI agent sessions in the same directory.
+              </p>
+            </div>
+            <Toggle checked={memoryHandoffEnabled} onChange={handleMemoryHandoff} />
+          </div>
+        </div>
+      </Card>
+
       <Card id="rtk">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold flex items-center gap-2">
