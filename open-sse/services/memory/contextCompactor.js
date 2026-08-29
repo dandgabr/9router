@@ -10,7 +10,7 @@
  * while consolidating older turns into a structured summary block.
  */
 
-const DEFAULT_THRESHOLD_TOKENS = 32000;
+const DEFAULT_THRESHOLD_TOKENS = 128000;
 const DEFAULT_RECENT_TURNS = 8;
 const CHARS_PER_TOKEN_ESTIMATE = 3.8;
 
@@ -66,7 +66,7 @@ function summarizeMessage(msg) {
  * @param {Object} body - Request body
  * @param {Object} options
  * @param {boolean} options.enabled - Whether compaction is enabled
- * @param {number} [options.thresholdTokens=32000] - Token threshold to trigger compaction
+ * @param {number} [options.thresholdTokens=128000] - Token threshold to trigger compaction
  * @param {number} [options.recentTurnsToKeep=8] - Number of recent turns to keep intact
  * @returns {{ body: Object, compacted: boolean, originalTokens: number, newTokens: number }}
  */

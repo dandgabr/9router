@@ -10,7 +10,7 @@
  * truncation note so the model retains awareness of past actions without wasting tokens.
  */
 
-const DEFAULT_MAX_CHARS = 800;
+const DEFAULT_MAX_CHARS = 4000;
 const DEFAULT_KEEP_TURNS = 2;
 
 /**
@@ -91,7 +91,7 @@ function findToolResultIndices(items) {
  * @param {Object} options
  * @param {boolean} options.enabled - Whether tool pruning is enabled
  * @param {number} [options.keepRecentTurns=2] - Number of recent tool turns to keep intact
- * @param {number} [options.maxHistoricalChars=800] - Max characters for older tool outputs
+ * @param {number} [options.maxHistoricalChars=4000] - Max characters for older tool outputs
  * @returns {{ body: Object, pruned: boolean, savedChars: number, count: number }}
  */
 export function pruneHistoricalTools(body, options = {}) {

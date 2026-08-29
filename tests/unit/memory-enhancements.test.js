@@ -151,7 +151,31 @@ test("Handoff Store: records, gets, and injects session handoff", () => {
   assert.equal(getHandoff(projectKey), null);
 });
 
-test("ApplyMemoryEnhancements: master orchestrator handles all modular toggles", async () => {
+test("ApplyMemoryEnhancements: defaults to safe non-lossy behavior (pruners disabled)", async () => {
+  const body = {
+    system: "You are a test assistant",
+    messages: [
+      { role: "user", content: "Check status" },
+      { role: "assistant", content: "Checking", tool_calls: [{ id: "t1", function: { name: "status" } }] },
+      { role: "tool", tool_call_id: "t1", content: "Status report: OK\n".repeat(60) },
+      { role: "assistant", content: "Now running tests", tool_calls: [{ id: "t2", function: { name: "test" } }] },
+      { role: "tool", tool_call_id: "t2", content: "Active test output" },
+      { role: "user", content: "All done" }
+    ]
+  };
+
+  const { stats } = await applyMemoryEnhancements(body, {
+    settings: {},
+    targetFormat: "claude"
+  });
+
+  assert.equal(stats.toolPruning.applied, false);
+  assert.equal(stats.mediaPruning.applied, false);
+  assert.equal(stats.compaction.applied, false);
+  assert.equal(stats.cacheAnchor.applied, true);
+});
+
+test("ApplyMemoryEnhancements: master orchestrator handles all modular toggles when enabled", async () => {
   const body = {
     messages: [
       { role: "user", content: "Check status" },
@@ -178,3 +202,4 @@ test("ApplyMemoryEnhancements: master orchestrator handles all modular toggles",
   assert.equal(stats.toolPruning.applied, true);
   assert.equal(stats.compaction.applied, false);
 });
+

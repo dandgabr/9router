@@ -51,8 +51,8 @@ export async function applyMemoryEnhancements(body, options = {}) {
     }
   }
 
-  // 2. Phase 1: Historical Media Pruning (default: enabled if not explicitly set to false)
-  const mediaPruningEnabled = settings.memoryMediaPruningEnabled !== false;
+  // 2. Phase 1: Historical Media Pruning (default: disabled, opt-in)
+  const mediaPruningEnabled = settings.memoryMediaPruningEnabled === true;
   if (mediaPruningEnabled) {
     const mediaRes = pruneHistoricalMedia(body, { enabled: true });
     if (mediaRes.pruned) {
@@ -61,13 +61,13 @@ export async function applyMemoryEnhancements(body, options = {}) {
     }
   }
 
-  // 3. Phase 1: Historical Tool Output Pruning (default: enabled if not explicitly set to false)
-  const toolPruningEnabled = settings.memoryToolPruningEnabled !== false;
+  // 3. Phase 1: Historical Tool Output Pruning (default: disabled, opt-in)
+  const toolPruningEnabled = settings.memoryToolPruningEnabled === true;
   if (toolPruningEnabled) {
     const toolRes = pruneHistoricalTools(body, {
       enabled: true,
       keepRecentTurns: settings.memoryMaxToolTurnsKeepFull ?? 2,
-      maxHistoricalChars: settings.memoryMaxHistoricalToolChars ?? 800,
+      maxHistoricalChars: settings.memoryMaxHistoricalToolChars ?? 4000,
     });
     if (toolRes.pruned) {
       stats.toolPruning = { applied: true, savedChars: toolRes.savedChars };
@@ -79,7 +79,7 @@ export async function applyMemoryEnhancements(body, options = {}) {
   if (settings.memoryCompactionEnabled === true) {
     const compactRes = compactContextWindow(body, {
       enabled: true,
-      thresholdTokens: settings.memoryCompactionThresholdTokens ?? 32000,
+      thresholdTokens: settings.memoryCompactionThresholdTokens ?? 128000,
       recentTurnsToKeep: settings.memoryRecentTurnsToKeep ?? 8,
     });
     if (compactRes.compacted) {

@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { Card, Toggle } from "@/shared/components";
 
 export default function MemoryClient() {
-  const [memoryToolPruningEnabled, setMemoryToolPruningEnabled] = useState(true);
+  const [memoryToolPruningEnabled, setMemoryToolPruningEnabled] = useState(false);
   const [memoryMaxToolTurnsKeepFull, setMemoryMaxToolTurnsKeepFull] = useState(2);
-  const [memoryMaxHistoricalToolChars, setMemoryMaxHistoricalToolChars] = useState(800);
-  const [memoryMediaPruningEnabled, setMemoryMediaPruningEnabled] = useState(true);
+  const [memoryMaxHistoricalToolChars, setMemoryMaxHistoricalToolChars] = useState(4000);
+  const [memoryMediaPruningEnabled, setMemoryMediaPruningEnabled] = useState(false);
   const [memoryCompactionEnabled, setMemoryCompactionEnabled] = useState(false);
-  const [memoryCompactionThresholdTokens, setMemoryCompactionThresholdTokens] = useState(32000);
+  const [memoryCompactionThresholdTokens, setMemoryCompactionThresholdTokens] = useState(128000);
   const [memoryRecentTurnsToKeep, setMemoryRecentTurnsToKeep] = useState(8);
   const [memoryCacheAnchorEnabled, setMemoryCacheAnchorEnabled] = useState(true);
   const [memoryHandoffEnabled, setMemoryHandoffEnabled] = useState(false);
@@ -32,10 +32,10 @@ export default function MemoryClient() {
         const res = await fetch("/api/settings");
         if (res.ok) {
           const data = await res.json();
-          setMemoryToolPruningEnabled(data.memoryToolPruningEnabled !== false);
+          setMemoryToolPruningEnabled(!!data.memoryToolPruningEnabled);
           if (typeof data.memoryMaxToolTurnsKeepFull === "number") setMemoryMaxToolTurnsKeepFull(data.memoryMaxToolTurnsKeepFull);
           if (typeof data.memoryMaxHistoricalToolChars === "number") setMemoryMaxHistoricalToolChars(data.memoryMaxHistoricalToolChars);
-          setMemoryMediaPruningEnabled(data.memoryMediaPruningEnabled !== false);
+          setMemoryMediaPruningEnabled(!!data.memoryMediaPruningEnabled);
           setMemoryCompactionEnabled(!!data.memoryCompactionEnabled);
           if (typeof data.memoryCompactionThresholdTokens === "number") setMemoryCompactionThresholdTokens(data.memoryCompactionThresholdTokens);
           if (typeof data.memoryRecentTurnsToKeep === "number") setMemoryRecentTurnsToKeep(data.memoryRecentTurnsToKeep);
@@ -144,11 +144,11 @@ export default function MemoryClient() {
               <input
                 type="number"
                 min="100"
-                max="5000"
-                step="100"
+                max="16000"
+                step="500"
                 value={memoryMaxHistoricalToolChars}
                 onChange={(e) => {
-                  const val = Math.max(100, parseInt(e.target.value, 10) || 800);
+                  const val = Math.max(100, parseInt(e.target.value, 10) || 4000);
                   setMemoryMaxHistoricalToolChars(val);
                   patchSetting({ memoryMaxHistoricalToolChars: val });
                 }}
@@ -198,11 +198,11 @@ export default function MemoryClient() {
               <input
                 type="number"
                 min="4000"
-                max="128000"
-                step="4000"
+                max="512000"
+                step="8000"
                 value={memoryCompactionThresholdTokens}
                 onChange={(e) => {
-                  const val = Math.max(4000, parseInt(e.target.value, 10) || 32000);
+                  const val = Math.max(4000, parseInt(e.target.value, 10) || 128000);
                   setMemoryCompactionThresholdTokens(val);
                   patchSetting({ memoryCompactionThresholdTokens: val });
                 }}
